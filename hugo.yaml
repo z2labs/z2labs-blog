@@ -1,0 +1,60 @@
+baseURL: "https://z2labs.github.io/z2labs-blog/"   # custom domain later: https://blog.z2labs.io/
+title: Z2Labs Blog
+theme: PaperMod
+languageCode: en-gb
+pagination:
+  pagerSize: 10
+enableRobotsTXT: true
+
+# Code blocks: server-side highlighting, no JavaScript, no flicker.
+markup:
+  highlight:
+    style: github
+    lineNos: false
+    noClasses: false
+    guessSyntax: true
+  goldmark:
+    renderer:
+      unsafe: true          # allows inline HTML / <figure> in Markdown
+    extensions:
+      passthrough:
+        enable: true        # $$ ... $$ math via KaTeX
+        delimiters:
+          block: [["$$", "$$"]]
+          inline: [["$", "$"]]
+
+params:
+  description: "RF, SDR and embedded measurement notes from Z2Labs."
+  defaultTheme: auto
+  ShowReadingTime: true
+  ShowToc: true
+  TocOpen: false
+  ShowCodeCopyButtons: true
+  ShowShareButtons: true
+  ShowBreadCrumbs: true
+  math: true
+  homeInfoParams:
+    Title: Z2Labs Blog
+    Content: RF hardware, SDR instrumentation and compliance measurements, written up for engineers.
+  socialIcons:
+    - name: github
+      url: "https://github.com/z2labs"
+    - name: linkedin
+      url: "https://www.linkedin.com/company/z2labs"
+    - name: rss
+      url: "index.xml"
+
+menu:
+  main:
+    - name: Posts
+      url: /posts/
+      weight: 10
+    - name: Tags
+      url: /tags/
+      weight: 20
+    - name: Search
+      url: /search/
+      weight: 30
+
+outputs:
+  home: [HTML, RSS, JSON]   # JSON feeds the search page

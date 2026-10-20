@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto" data-theme="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>Hubble Network on a Silicon Labs xG24: &#43;20 dBm radio board, Eight Weeks on a Budapest Roof, Zero Packets | Z2Labs Blog</title>
+<meta name="keywords" content="hubble, satellite-iot, ble, efr32xg24, zephyr, hackrf, bb60c">
+<meta name="description" content="We brought up Hubble&#39;s direct-to-satellite BLE on an EFR32xG24, measured it at 2.482 GHz, and found out why eight weeks in Budapest gave zero packets.">
+<meta name="author" content="Zoltán Dóczi">
+<link rel="canonical" href="http://127.0.0.1:1313/blog/posts/hubble-satellite-link-test/">
+<link crossorigin="anonymous" href="/blog/assets/css/stylesheet.5d5c6f9e272755df462c1c24d45bd01c20b7575effbe829627a6ba16edbc3b1e.css" integrity="sha256-XVxvnicnVd9GLBwk1FvQHCC3V17/voKWJ6a6Fu28Ox4=" rel="preload stylesheet" as="style">
+<link rel="icon" href="http://127.0.0.1:1313/blog/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="http://127.0.0.1:1313/blog/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="http://127.0.0.1:1313/blog/favicon-32x32.png">
+<link rel="apple-touch-icon" href="http://127.0.0.1:1313/blog/apple-touch-icon.png">
+<link rel="mask-icon" href="http://127.0.0.1:1313/blog/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="en" href="http://127.0.0.1:1313/blog/posts/hubble-satellite-link-test/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+                color-scheme: dark;
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .toc {
+                background: var(--entry);
+            }
+        }
+
+    </style>
+</noscript>
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else if (localStorage.getItem("pref-theme") === "light") {
+       document.querySelector("html").dataset.theme = 'light';
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else {
+        document.querySelector("html").dataset.theme = 'light';
+    }
+
+</script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]});"></script>
+
+<style>
+  .post-content { max-width: 900px; }           
+  .post-content figure figcaption { font-size: .9em; color: var(--secondary); margin-top: .4rem; }
+  .post-content table { display: table; width: 100%; font-size: .92em; }
+  .post-content pre { white-space: pre-wrap; word-break: break-word; }
+</style>
+<style>.post-content figure.portrait img { max-height: 70vh; width: auto; margin: 0 auto; display: block; }</style>
+<meta property="og:url" content="http://127.0.0.1:1313/blog/posts/hubble-satellite-link-test/">
+  <meta property="og:site_name" content="Z2Labs Blog">
+  <meta property="og:title" content="Hubble Network on a Silicon Labs xG24: &#43;20 dBm radio board, Eight Weeks on a Budapest Roof, Zero Packets">
+  <meta property="og:description" content="We brought up Hubble&#39;s direct-to-satellite BLE on an EFR32xG24, measured it at 2.482 GHz, and found out why eight weeks in Budapest gave zero packets.">
+  <meta property="og:locale" content="en_gb">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2026-10-05T00:00:00+00:00">
+    <meta property="article:modified_time" content="2026-10-20T00:00:00+00:00">
+    <meta property="article:tag" content="Hubble">
+    <meta property="article:tag" content="Satellite-Iot">
+    <meta property="article:tag" content="Ble">
+    <meta property="article:tag" content="Efr32xg24">
+    <meta property="article:tag" content="Zephyr">
+    <meta property="article:tag" content="Hackrf">
+    <meta property="og:image" content="http://127.0.0.1:1313/blog/posts/hubble-satellite-link-test/roof-hackrf-and-module-box.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="http://127.0.0.1:1313/blog/posts/hubble-satellite-link-test/roof-hackrf-and-module-box.jpg">
+  <meta name="twitter:title" content="Hubble Network on a Silicon Labs xG24: &#43;20 dBm radio board, Eight Weeks on a Budapest Roof, Zero Packets">
+  <meta name="twitter:description" content="We brought up Hubble&#39;s direct-to-satellite BLE on an EFR32xG24, measured it at 2.482 GHz, and found out why eight weeks in Budapest gave zero packets.">
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "http://127.0.0.1:1313/blog/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "Hubble Network on a Silicon Labs xG24: +20 dBm radio board, Eight Weeks on a Budapest Roof, Zero Packets",
+      "item": "http://127.0.0.1:1313/blog/posts/hubble-satellite-link-test/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Hubble Network on a Silicon Labs xG24: +20 dBm radio board, Eight Weeks on a Budapest Roof, Zero Packets",
+  "name": "Hubble Network on a Silicon Labs xG24: \u002b20 dBm radio board, Eight Weeks on a Budapest Roof, Zero Packets",
+  "description": "We brought up Hubble's direct-to-satellite BLE on an EFR32xG24, measured it at 2.482 GHz, and found out why eight weeks in Budapest gave zero packets.",
+  "keywords": [
+    "hubble", "satellite-iot", "ble", "efr32xg24", "zephyr", "hackrf", "bb60c"
+  ],
+  "articleBody": "Hubble Network promises satellite connectivity from an ordinary Bluetooth SoC requiring only a firmware change and no additional radio hardware. We brought up its sat-continuous sample application on a +20 dBm Silicon Labs EFR32xG24 radio board, confirmed the Tx bursts near 2.482 GHz with a HackRF SDR, a Signal Hound BB60C and an ESPARGOS receiver, and left the boards on a Budapest roof for roughly eight weeks. The result? Not a single packet appeared on the Dashboard.\nThe radio, it turned out, wasn’t the culprit. During our test, Hubble’s satellite service was available only in the US, a limitation that wasn’t mentioned in the onboarding documentation we followed. Hubble has since publicly confirmed this restriction and updated its documentation. In this post, we walk through the bring-up process, our measurements, and the first things we’d check if we were to run the experiment again.\nHighlights Item Result Condition Firmware bring-up (xG24, Zephyr) Works, ~10.33 s send interval sat-continuous, BRD4187C on WSTK Carrier observed 2.482578 GHz Over the air, PCB antenna, no cable OTA peak at analyser −12.4 dBm BB60C, antenna to antenna, short distance, relative only Burst spectrum (BB60C) Narrowband, hopping-like; very likely not standard BLE GFSK Antenna to antenna, qualitative Satellite packets in Dashboard 0 over ~8 weeks Budapest, Sandbox account, outside the coverage region Field runtime, 18650 + LDO ~2 weeks 2800 mAh cell, unmodified test loop The transmitter worked from the first day of the roof test: the HackRF next to it saw every burst. The problem was further up the link. (The xG24 used its PCB antenna; the dish at the edge of the frame is unrelated.) Context: Bluetooth to orbit A few years ago, we worked on an ESA-funded study of a low-power IoT link via geostationary satellites, so Hubble’s claim that an unmodified BLE SoC could reach orbit immediately caught our attention.\nGEO and LEO satellites offer very different trade-offs. A GEO satellite remains fixed relative to the ground, providing continuous coverage of the same area and making two-way communication practical. The downside is distance: at 2.48 GHz, the free-space path loss is about 191 dB, roughly 35 dB higher than for a LEO satellite overhead at an altitude of 590 km. That extra path loss makes communication with a GEO satellite much more demanding for a low-power device.\nLEO satellites, by contrast, pass much closer to the ground, reducing path loss enough to make Hubble’s approach—a +20 dBm transmitter using a PCB antenna—plausible. But these satellites move across the sky, so connectivity is available only during passes. In Hubble’s approach, messages are sent one-way and can take up to six hours to be delivered. This makes the technology well suited to telemetry that can tolerate delays, but less suitable for applications that require continuous connectivity or a quick response. Despite these limitations, we found the technology very interesting and wanted to give a test a go.\nHubble runs two networks. The terrestrial network picks up ordinary BLE advertisements through phones and gateways. The satellite network uses the same 2.4 GHz radio hardware, but with a dedicated waveform: according to Hubble’s regulatory page it is a frequency-hopping system on 19 channels at the band edge, above 2.481 GHz, with an always-on preamble and a lower bit rate than standard BLE advertising. In other words, a standard BLE advertising sample won’t reach the satellites: Hubble’s satellite protocol uses its own channel plan and transmission format, rather than standard BLE advertising on channel 39.\nThe device side needs a supported SoC, the Hubble Device SDK, and at least +20 dBm radiated power. Most BLE chips output 0 to 8 dBm, so the +20 dBm xG24 radio board is one of the simplest ways in. Hubble lists the EFR32xG24 +20 dBm kit as a validated satellite platform on its compatibility page.\nThe link is one-way. The device transmits and never receives an acknowledgement. Packets come down through Hubble’s ground segment and are supposed to appear in the Dashboard within six hours of a pass. The only end-to-end test is to transmit and then check the Dashboard.\nSetup Item Identity Role Radio board Silicon Labs BRD4187C Rev A00, EFR32MG24B220F1536IM48, +20 dBm, PCB antenna (U.FL connector path not connected) Satellite transmitter Mainboard BRD4001A Rev A01 (WSTK) J-Link programming, VCOM, bench power Second board ESP32-C6 SuperMini (ESP32-C6FH4), ESP-IDF 5.5.5 Comparison transmitter Receivers HackRF One (Nooelec case, TCXO) + Android RF analyser app; Signal Hound BB60C + Spike; ESPARGOS Local OTA verification Firmware Hubble Device SDK samples/zephyr/sat-continuous, Zephyr v4.4.0-10782-gcc4eb97a7fd7 Continuous transmit loop Toolchain Windows, Python 3.12.10, west 1.5.0, CMake 4.4.2, Zephyr SDK 1.0.1 Build host Registration Hubble Dashboard, Sandbox org, DEVICE UPTIME counter, AES-256-CTR Device credentials Power supply Bench: WSTK powered by a RAVPower RP-PB31 power bank, monitored with an FNB58 power meter. Field: radio board powered by an 18650 cell through an ST LDO (marking LL33). Bench and rooftop power supply chain Site Flat roof, Budapest (47.5° N), open sky, board on a 20 to 30 cm non-conductive spacer We did not record the Hubble Device SDK commit hash used for the test. The SDK was checked out from the main branch as of mid-August 2026. This limits reproducibility and is discussed further in the Limitations section.\nHow the satellite path works EFR32xG24 (Zephyr + Hubble SDK) key (AES-256) + counter (DEVICE UPTIME) + 0/4/9/13-byte payload │ FHSS bursts, 19 ch above 2.481 GHz, +20 dBm conducted ▼ PCB antenna ~600–1100 km slant range (LEO, ~590 km altitude) ▼ Hubble satellite (phased-array receiver) ▼ store and forward, ≤ 6 h Hubble cloud: decrypt, attribute to device ID ──► Dashboard For a packet to appear in the Dashboard, the entire path must work: the device must transmit successfully, a satellite must receive the burst, and Hubble’s ground segment and backend must process the packet correctly.\nThe device registration and transmission configuration must also agree. According to the configuration used for this test, the relevant parameters include the device key, counter source (DEVICE UPTIME or UNIX_TIME), and key size. A mismatch may prevent successful packet processing even when the RF transmission itself is correct.\nThis makes an empty Dashboard inherently ambiguous. It does not tell us whether a burst failed to reach a satellite, whether the satellite was listening over the test location, or whether a received packet was rejected during backend processing. Without an acknowledgement or an independent indication of satellite reception, these failure modes can look identical from the device side.\nBring-up on Windows The full step-by-step procedure is in the Try it section. These were the main issues we encountered in order:\nPython 3.14 lacked compatible wheels for grpcio-tools and hidapi. Python 3.12 resolved the issue. We reported this upstream. Build tools: Installing CMake and Ninja in the virtual environment fixed west zephyr-export. The Zephyr SDK setup.cmd could not find 7z on PATH, even though the archive tool had just used it. Adding C:\\Program Files\\7-Zip to PATH fixed it. Unknown HUBBLE_* Kconfig symbols appeared because we had cloned the SDK next to an existing Zephyr workspace. Using the SDK as the west manifest (or adding it to the manifest) fixed it. Passing the Base64 key through PowerShell → west → CMake produced malformed string literal … Assignment ignored. The build went through anyway. A key in a separate .conf file avoids the quoting problem. The Silicon Labs radio path links against the RAIL library, which needs west blobs fetch hal_silabs. Blinky built for xg24_rb4187c (26 400 B flash, 4 136 B RAM) and flashed through the WSTK’s J-Link. The sat-continuous sample then booted with:\n*** Booting Zephyr OS build v4.4.0-10782-gcc4eb97a7fd7 *** hubblenetwork: Hubble Device SDK initialized (HDCV:1.0/E:256/CS:DU/EC:128/RP:S86400/N:S/SV:0) hubblenetwork: Hubble Satellite packet sent hubblenetwork: Hubble Satellite packet sent The fields that matter: E:256 is AES-256, CS:DU is the DEVICE UPTIME counter, and N:S means satellite mode. Consecutive log timestamps are 10.329 s apart. Packet sent means only that the send call returned. It says nothing about whether a satellite received anything.\nThe whole field test ran on the on-board PCB antenna (default assembly option of the radio board). The U.FL connector is not in the RF path unless the 0 Ω selector is moved, so a cable on the U.FL alone would have done nothing. Results: is it actually transmitting? We checked the transmitter at four levels, and each level proves something different:\nCheck Proves Does not prove Boot log with N:S and periodic sent Firmware reaches the TX path RF output Spectrum/waterfall bursts near 2.482 GHz RF at the right place and period Framing, key, link margin Burst spectrum Narrowband bursts at the band edge That Hubble can decode it Packet in Dashboard End-to-end Reliability over many passes HackRF: bursts at the band edge With the HackRF on the roof next to the box, the Android RF analyser app (2482 MHz centre, 20 MHz span) showed a burst every ~10 s just above 2481 MHz, about 10 dB above the noise floor on the averaged trace.\nEvery ~10 s a short burst shows up at the 2.4 GHz band edge, above the last BLE advertising channel. That is where Hubble's satellite channels are. The fainter traces to the left were not identified. BB60C capture To go beyond a waterfall, we pointed a Signal Hound BB60C signal analyser with a 2.4 GHz antenna at the board (antenna to antenna, short distance, no cable). The marker read −12.4 dBm peak at 2.4825 GHz in one session and −16.5 dBm in another. These are relative numbers: we did not calibrate antenna gains or distance, so they say nothing about EIRP. We also measured a carrier at 2.482578 GHz.\nWe cannot identify the modulation from these captures. In our view it is a narrowband, frequency-hopping waveform, possibly with an FSK core, rather than standard BLE GFSK. OFDM is a weaker candidate: its peak-to-average power would cost the transmitter efficiency, which a battery-powered endpoint can ill afford.\nESPARGOS (the ESP32-based coherent receiver array) also picked up the bursts, which gave us an independent confirmation by a third receiver.\nThe step we skipped Hubble’s quick start guide describes a more conclusive local test using an ADALM-PLUTO SDR and pyhubblenetwork. This setup can decode captured packets using your device key and associate them with your device ID, helping verify the transmission format and configuration independently of the satellite network.\nWe did not run this test. In hindsight, it is the first thing we would do next time: verify that our transmissions can be decoded locally before investigating satellite reception or backend delivery.\nThe field test We deployed the boards on the rooftop in early August and left them running until late September, with occasional interruptions for reflashing. We tested two EFR32xG24 boards, each with its own registered device key. We later added an ESP32-C6 board (a chip family supported by Hubble’s ESP-IDF sample) as a comparison transmitter. All boards were positioned on a 20–30 cm plastic spacer above the roof membrane, with an unobstructed view of the sky.\nThe view of the sky was about as open as you can get in a city. At no point was the transmitter's location the limiting factor. Look4Sat with current TLEs gave plenty of high passes. HUBBLE 6 (NORAD 64562) reached 80.3° at 01:11 local on 8 August, and HUBBLE 7 (NORAD 64592) had regular passes in the 45° to 50° range. The predicted horizon-to-horizon duration was about 12.5 minutes at 590 to 594 km.\nThere was no shortage of high passes over Budapest: several per day were recorded, some above 75°. Being able to see a satellite does not mean it is serving your location. After every pass the Dashboard still showed Recent packet: Never. Over the following weeks we checked everything on our side:\nKey. We checked that the Base64 key in the build matched the registration, regenerated keys, and registered a second board separately. Counter mode. We confirmed CS:DU in the boot log against DEVICE UPTIME in the Dashboard. Antenna. We kept the PCB antenna away from the roof surface, the battery and the wiring. Passes. We tried high-elevation passes, at night and during the day. Waiting time. We waited more than the documented six hours before calling a pass a failure. A second transmitter. The ESP32-C6 also produced local RF, and its packets did not appear either. We contacted Hubble support with the hardware, SDK and configuration details. Their first reply asked which reference firmware and dev kit we were using.\nWhat we were missing In late September we found out, independently and by chance, that Hubble’s satellite receivers were only providing service over the US at that point. Over Europe the constellation was effectively deaf to user uplinks. Nothing in the onboarding flow or the documentation we followed (quick start, compatibility page, SDK samples) mentioned a geographic limit. Several weeks of troubleshooting the key, the antenna and the power supply were therefore aimed at a link that could not have worked from Budapest.\nWe wrote this up on LinkedIn. Apoorva Nori, Head of Product at Hubble Network, replied on 4 October:\n“Thanks for your feedback and for being an early adopter of the SDK, Zoltán Dóczi. We’re actively rolling out the service outside the US and have updated our documentation to be clearer about geographic coverage. We’ll keep you updated!”\n— Apoorva Nori, Hubble Network, LinkedIn, 4 October 2026\nHubble's public reply confirms the regional limit and the documentation change. It came after the test, not before. Since then, the transmission guidance lists the coverage region as North America. That is a useful fix, and we appreciate the quick response.\nA second blocker in the current documentation. The updated quick start guide also states that “Sandbox does not have Satellite access.” Satellite access requires a Hubble Live organisation, but our devices were registered under Sandbox.\nWe don’t know whether this restriction was documented when we ran our test in August, as we didn’t save a copy of the documentation at the time. Regardless, under the current requirements, our setup would not have worked even within the satellite coverage area.\nIf you’re planning to repeat this experiment, confirm both satellite coverage in your region and satellite access for your account before climbing up to the roof.\nSanity checks Orbit The HUBBLE-6 TLE from 21 September 2026 gives a mean motion of 14.937 rev/day, which is a period of 96.4 min and a semi-major axis corresponding to about 594 km altitude. The inclination is 97.78°, a sun-synchronous orbit. This matches the 590 to 594 km that Look4Sat shows. Hubble’s guidance quotes “approximately 550 km”, which presumably describes the constellation in general rather than these two satellites.\nHubble’s documentation gives a 3 to 5 minute useful window per pass, against 12.5 minutes horizon to horizon. That fits a receiver that only covers part of the sky: a phased array with a limited scan angle rather than an omnidirectional antenna. This is our interpretation.\nLink budget Free-space path loss at 2.482 GHz:\n$$ \\mathrm{FSPL} = 20\\log_{10} d + 20\\log_{10} f - 147.55\\ \\mathrm{dB} $$ Elevation Slant range FSPL Received power at a 0 dBi antenna for +20 dBm EIRP 90° 590 km 155.8 dB −135.8 dBm 60° 672 km 156.9 dB −136.9 dBm 45° 802 km 158.4 dB −138.4 dBm 30° 1059 km 160.8 dB −140.8 dBm A 1 MHz receiver bandwidth has a thermal noise floor of −114 dBm. A 0 dBi antenna would therefore leave the signal more than 20 dB below the noise. To close the link, the satellite needs a high-gain array (Hubble’s material mentions more than 100 elements, which is roughly 20 dB of gain), processing gain from coding and repetition, and a full +20 dBm actually radiated. That last point is a problem for the radio board. Its small PCB antenna almost certainly has an efficiency well below 100 %, so +20 dBm conducted probably means less than +20 dBm radiated. Hubble’s guidance warns that PCB and chip antennas reduce coverage and recommends a dipole. We cannot test this without coverage, but a dipole on the U.FL path would be our first hardware change for a supported-region test.\nDoppler At about 7.57 km/s orbital velocity and 590 km altitude, the largest line-of-sight velocity near the horizon is about 6.9 km/s. At 2.482 GHz this gives a Doppler shift of up to about ±57 kHz. That is not negligible: if the 19 channels share the 2.481–2.4835 GHz edge, the spacing is only about 130 kHz, so the receiver must compensate. It can, because the satellite knows its own ephemeris and the shift follows a predictable curve over the pass. In our view, Doppler combined with crystal tolerance was not a plausible reason for the missing packets, even though it was one of the first theories we considered.\nBattery life: estimate versus measurement A first estimate assumed a 50 ms burst at 150 mA every 10 s and a 100 µA sleep current. That gives an average of about 0.85 mA, which would mean around 80 days from a 2800 mAh 18650 cell through a low-dropout LDO. The measured runtime in the field was about two weeks, which means an average of roughly 7 to 8 mA.\nThe difference is not mysterious. The sat-continuous sample is a bring-up loop, not a low-power application. The board’s LED was visibly on at night. The ST LDO has a quiescent current in the hundreds of µA, and we never measured the real TX pulse or the sleep current. The bench setup drew 159 mA at 5.065 V from the power bank, but that number includes the WSTK and its debugger and says nothing about the radio itself. Runtime estimates for this sample are meaningless until you measure the current trace.\n159 mA at 5 V is what the whole WSTK draws, debugger included. Most of that current does not go to the radio, and none of it describes the radio's TX pulse. In the standalone field configuration, an 18650 cell feeds an ST LDO that supplies 3.3 V to the radio board. It ran for about two weeks, roughly a tenth of the estimate. The satellites are alive A fellow radio amateur pointed out that the Hubble satellites also have FCC-filed frequencies around 400 MHz, and that SatNOGS monitors them. HUBBLE-6 telemetry at 401.1 MHz (GMSK, 4800 Bd, AX.25) was recorded on 13 September 2026 by station 3020, Jim Hutchison, North Carolina and on 19 August 2026 by station 2178, DIYSATELLITE, Uruguay. The AX.25 address fields decode by shifting each byte right by one:\n8A A6 8E A6 60 62 E0 → dest \"ESGS01\" 90 AA 84 84 98 6C E1 → src \"HUBBL6\" 03 F0 → UI frame, no layer 3 The rest of each frame is binary telemetry, which we did not try to interpret. These frames are the satellite’s own downlink. They are not acknowledgements of our 2.4 GHz uplink. They do show that HUBBLE-6 was healthy and on orbit while our packets went nowhere. A nice detail: the Uruguay station received the satellite in mid-August, when nothing we sent from Budapest arrived.\nMyths we had to unlearn During bring-up we used an AI chat assistant. Several of its answers sounded confident and were wrong, and some of them sent us after the wrong problem for days:\n“If the key were wrong, it wouldn’t compile.” It compiles. An empty key builds and runs with an all-zero placeholder, and you only get a warning at boot. A valid key from the wrong registration passes every local check. Only the backend can catch it. “It’s a BLE advertisement on channel 39.” It is not. The satellite mode hops over 19 channels above 2.481 GHz and uses its own framing. A BLE sniffer looking for 0x8E89BED6 will not find it. “Hubble has two satellites, Hubble-1 and -2.” That information is out of date. The passes we planned around were HUBBLE 6 and HUBBLE 7, both launched in 2025 (COSPAR 2025-135). “The roof detuned the antenna and 90 % of the power was reflected.” Nobody measured that. A spacer is good practice, but it was not the cause. “A high pass means the satellite will hear you.” Only if the service covers your location and your account includes satellite access. Limitations and open questions No end-to-end validation. We never saw a packet delivered, so we cannot vouch for the complete chain. We can only say that our transmitter produced plausible RF. No local decrypt. The Pluto plus pyhubblenetwork test is the missing middle step. No calibrated EIRP. The over-the-air readings are relative. With a PCB antenna, it is possible that the board does not meet Hubble’s requirement of at least +20 dBm radiated. SDK commit not recorded. Zephyr is pinned, but the Hubble SDK was main from mid-August. Sandbox vs Live. We do not know what the documentation said about this in August. Power numbers are approximate. We have no current trace, only the field runtime. The ESP32-C6 run produced local RF, but we did not record its PHY library setup completely. We would repeat the test as soon as coverage reaches Europe, with a Live account, a dipole on the U.FL path, a Pluto decode before the roof, and a current probe.\nTry it Before anything else: confirm with Hubble that your organisation has Hubble Live with Satellite (Sandbox does not include it) and that the service covers your test coordinates. When we checked on 5 October 2026, the coverage region was North America.\n1. Workspace (PowerShell, Python 3.12, Git, 7-Zip, SEGGER J-Link installed):\nNew-Item -ItemType Directory -Force -Path C:\\dev\\hubble-xg24 Set-Location C:\\dev\\hubble-xg24 py -3.12 -m venv .venv .\\.venv\\Scripts\\Activate.ps1 python -m pip install --upgrade pip west cmake ninja west init -m https://github.com/HubbleNetwork/hubble-device-sdk.git . west update python -m pip install -r .\\zephyr\\scripts\\requirements.txt west zephyr-export $env:Path += \";C:\\Program Files\\7-Zip\" west sdk install west blobs fetch hal_silabs 2. Prove that programming works:\nwest build -p always -b xg24_rb4187c .\\zephyr\\samples\\basic\\blinky west flash 3. Register the device in the Dashboard with DEVICE UPTIME and AES-256-CTR. Save the Base64 key right away: it is shown only once, and the UUID shown later is the device ID, not the key.\n4. Put the key in a file instead of on the command line. Create samples/zephyr/sat-continuous/local-device.conf and add it to .git/info/exclude:\nCONFIG_SAMPLE_HUBBLE_KEY=\"YOUR_BASE64_KEY\" 5. Build, flash and check the boot log for E:256/CS:DU/…/N:S:\nwest build -p always -b xg24_rb4187c .\\modules\\lib\\hubblenetwork-sdk\\samples\\zephyr\\sat-continuous -- -DEXTRA_CONF_FILE=local-device.conf west flash 6. Decrypt locally before you go up on the roof (ADALM-PLUTO, Docker):\npython -m pip install pyhubblenetwork hubblenetwork sat scan --key \"YOUR_BASE64_KEY\" 7. Payload: the size must be exactly 0, 4, 9 or 13 bytes. For example:\nstatic const uint8_t payload[4] = { 0x01, 0x2A, 0x00, 0x00 }; err = hubble_sat_packet_get(\u0026pkt, payload, sizeof(payload)); Troubleshooting by symptom\nSymptom Cause in our case Fix pip builds grpcio-tools/hidapi from source and fails Python 3.14 Python 3.12 venv CMake is not installed Not in the venv pip install cmake ninja setup.cmd can’t find 7z PATH Add the 7-Zip directory Unknown HUBBLE_* Kconfig symbols SDK not in the west manifest Use the SDK as the manifest malformed string literal … Assignment ignored PowerShell quoting EXTRA_CONF_FILE RAIL library missing at link time Blob not fetched west blobs fetch hal_silabs Boot warns about a placeholder key Key empty Supply the key, pristine build RF visible, Dashboard empty Region, account type, key or counter mismatch Check region and account first, then decode locally ESP32-C6: use samples/esp-idf/sat-continuous, run idf.py set-target esp32c6, then menuconfig, then build flash monitor. Here the key option is called CONFIG_HUBBLE_DEVICE_KEY, not CONFIG_SAMPLE_HUBBLE_KEY. Do not overwrite sdkconfig.defaults with the key line alone, because that deletes the satellite and counter settings. The PHY library requirements depend on the ESP-IDF version; see the ESP-IDF integration guide. The ESP32-S3 is not a supported satellite target.\nReferences: Hubble Device SDK · Satellite quick start · Transmission guidance · Regulatory guidance · Chip compatibility · Zephyr getting started\nUpdated: 5 October 2026. The documentation was rechecked after Hubble’s reply; the observations above are from August–September 2026.\nDisclosure: all hardware was our own, and Hubble Network, Silicon Labs and Espressif had no involvement in the test. An AI chat assistant was used during bring-up (see “Myths”), and this article was prepared with the help of Claude.\n",
+  "wordCount" : "4024",
+  "inLanguage": "en",
+  "image":"http://127.0.0.1:1313/blog/posts/hubble-satellite-link-test/roof-hackrf-and-module-box.jpg","datePublished": "2026-10-05T00:00:00Z",
+  "dateModified": "2026-10-20T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "Zoltán Dóczi"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "http://127.0.0.1:1313/blog/posts/hubble-satellite-link-test/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Z2Labs Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "http://127.0.0.1:1313/blog/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+<body id="top">
+    <header class="header">
+    <nav class="header-nav">
+        <div class="logo">
+            <a href="http://127.0.0.1:1313/blog/" accesskey="h" title="Z2Labs Blog (Alt + H)">Z2Labs Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" class="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
+                    <svg class="moon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg class="sun" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu" class="menu">
+            <li>
+                <a href="http://127.0.0.1:1313/blog/posts/" title="Posts">
+                    <span>Posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://127.0.0.1:1313/blog/tags/" title="Tags">
+                    <span>Tags</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://127.0.0.1:1313/blog/search/" title="Search (Alt &#43; /)" accesskey=/>
+                    <span>Search</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <nav class="breadcrumbs" role="navigation" aria-label="Breadcrumb">
+            <a href="/blog/">Home</a>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right">
+                <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+            <a href="/blog/posts/">Posts</a>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right">
+        <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+</nav>
+    <h1 class="post-title entry-hint-parent">
+      Hubble Network on a Silicon Labs xG24: &#43;20 dBm radio board, Eight Weeks on a Budapest Roof, Zero Packets
+    </h1>
+    <div class="post-description">
+      We brought up Hubble&#39;s direct-to-satellite BLE on an EFR32xG24, measured it at 2.482 GHz, and found out why eight weeks in Budapest gave zero packets.
+    </div>
+    <div class="post-meta">
+
+<span title='2026-10-05T00:00:00+00:00'>October 5, 2026</span>&nbsp;·&nbsp;<span>19 min</span>&nbsp;·&nbsp;<span>Zoltán Dóczi</span>
+
+</div>
+  </header> 
+<figure class="entry-cover">
+            <img loading="eager"
+                srcset='http://127.0.0.1:1313/blog/posts/hubble-satellite-link-test/roof-hackrf-and-module-box_hu_878603bd4ce452ae.jpg 360w,http://127.0.0.1:1313/blog/posts/hubble-satellite-link-test/roof-hackrf-and-module-box_hu_6a0d8195d709d911.jpg 480w,http://127.0.0.1:1313/blog/posts/hubble-satellite-link-test/roof-hackrf-and-module-box_hu_1869398684e99d9a.jpg 720w,http://127.0.0.1:1313/blog/posts/hubble-satellite-link-test/roof-hackrf-and-module-box_hu_2f0cc4edef120544.jpg 1080w,http://127.0.0.1:1313/blog/posts/hubble-satellite-link-test/roof-hackrf-and-module-box_hu_2c420cb3d72e1ea7.jpg 1500w,http://127.0.0.1:1313/blog/posts/hubble-satellite-link-test/roof-hackrf-and-module-box.jpg 2000w'
+                src="http://127.0.0.1:1313/blog/posts/hubble-satellite-link-test/roof-hackrf-and-module-box.jpg"
+                sizes="(min-width: 768px) 720px, 100vw"
+                width="2000" height="1500"
+                alt="HackRF next to the xG24 transmitter box on a Budapest roof">
+        
+</figure><details class="toc" >
+    <summary accesskey="c" title="(Alt + C)">
+        <span class="title">Table of Contents</span>
+    </summary>
+
+    <div class="inner"><ul>
+            <li>
+                <a href="#highlights" aria-label="Highlights">Highlights</a></li>
+            <li>
+                <a href="#context-bluetooth-to-orbit" aria-label="Context: Bluetooth to orbit">Context: Bluetooth to orbit</a></li>
+            <li>
+                <a href="#setup" aria-label="Setup">Setup</a></li>
+            <li>
+                <a href="#how-the-satellite-path-works" aria-label="How the satellite path works">How the satellite path works</a></li>
+            <li>
+                <a href="#bring-up-on-windows" aria-label="Bring-up on Windows">Bring-up on Windows</a></li>
+            <li>
+                <a href="#results-is-it-actually-transmitting" aria-label="Results: is it actually transmitting?">Results: is it actually transmitting?</a><ul>
+                    
+            <li>
+                <a href="#hackrf-bursts-at-the-band-edge" aria-label="HackRF: bursts at the band edge">HackRF: bursts at the band edge</a></li>
+            <li>
+                <a href="#bb60c-capture" aria-label="BB60C capture">BB60C capture</a></li>
+            <li>
+                <a href="#the-step-we-skipped" aria-label="The step we skipped">The step we skipped</a></li></ul>
+            </li>
+            <li>
+                <a href="#the-field-test" aria-label="The field test">The field test</a><ul>
+                    
+            <li>
+                <a href="#what-we-were-missing" aria-label="What we were missing">What we were missing</a></li></ul>
+            </li>
+            <li>
+                <a href="#sanity-checks" aria-label="Sanity checks">Sanity checks</a><ul>
+                    
+            <li>
+                <a href="#orbit" aria-label="Orbit">Orbit</a></li>
+            <li>
+                <a href="#link-budget" aria-label="Link budget">Link budget</a></li>
+            <li>
+                <a href="#doppler" aria-label="Doppler">Doppler</a></li>
+            <li>
+                <a href="#battery-life-estimate-versus-measurement" aria-label="Battery life: estimate versus measurement">Battery life: estimate versus measurement</a></li>
+            <li>
+                <a href="#the-satellites-are-alive" aria-label="The satellites are alive">The satellites are alive</a></li></ul>
+            </li>
+            <li>
+                <a href="#myths-we-had-to-unlearn" aria-label="Myths we had to unlearn">Myths we had to unlearn</a></li>
+            <li>
+                <a href="#limitations-and-open-questions" aria-label="Limitations and open questions">Limitations and open questions</a></li>
+            <li>
+                <a href="#try-it" aria-label="Try it">Try it</a>
+            </li>
+        </ul>
+    </div>
+</details>
+
+  <div class="post-content md-content"><p>Hubble Network promises satellite connectivity from an ordinary Bluetooth SoC requiring only a firmware change and no additional radio hardware. We brought up its <code>sat-continuous</code> sample application on a +20 dBm Silicon Labs EFR32xG24 radio board, confirmed the Tx bursts near 2.482 GHz with a HackRF SDR, a Signal Hound BB60C and an ESPARGOS receiver, and left the boards on a Budapest roof for roughly eight weeks. The result? Not a single packet appeared on the Dashboard.</p>
+<p>The radio, it turned out, wasn&rsquo;t the culprit. During our test, Hubble&rsquo;s satellite service was available only in the US, a limitation that wasn&rsquo;t mentioned in the onboarding documentation we followed. Hubble has since publicly confirmed this restriction and updated its documentation. In this post, we walk through the bring-up process, our measurements, and the first things we&rsquo;d check if we were to run the experiment again.</p>
+<h2 id="highlights">Highlights<a hidden class="anchor" aria-hidden="true" href="#highlights">#</a></h2>
+<table>
+  <thead>
+      <tr>
+          <th>Item</th>
+          <th>Result</th>
+          <th>Condition</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Firmware bring-up (xG24, Zephyr)</td>
+          <td>Works, ~10.33 s send interval</td>
+          <td><code>sat-continuous</code>, BRD4187C on WSTK</td>
+      </tr>
+      <tr>
+          <td>Carrier observed</td>
+          <td><strong>2.482578 GHz</strong></td>
+          <td>Over the air, PCB antenna, no cable</td>
+      </tr>
+      <tr>
+          <td>OTA peak at analyser</td>
+          <td>−12.4 dBm</td>
+          <td>BB60C, antenna to antenna, short distance, relative only</td>
+      </tr>
+      <tr>
+          <td>Burst spectrum (BB60C)</td>
+          <td>Narrowband, hopping-like; very likely not standard BLE GFSK</td>
+          <td>Antenna to antenna, qualitative</td>
+      </tr>
+      <tr>
+          <td>Satellite packets in Dashboard</td>
+          <td><strong>0</strong> over ~8 weeks</td>
+          <td>Budapest, Sandbox account, outside the coverage region</td>
+      </tr>
+      <tr>
+          <td>Field runtime, 18650 + LDO</td>
+          <td>~2 weeks</td>
+          <td>2800 mAh cell, unmodified test loop</td>
+      </tr>
+  </tbody>
+</table>
+<figure>
+  <a href="roof-hackrf-and-module-box.jpg"><img src="roof-hackrf-and-module-box.jpg" alt="HackRF with a whip antenna next to the xG24 transmitter in a plastic box on the roof" loading="lazy"></a>
+  <figcaption>The transmitter worked from the first day of the roof test: the HackRF next to it saw every burst. The problem was further up the link. (The xG24 used its PCB antenna; the dish at the edge of the frame is unrelated.)</figcaption>
+</figure>
+<h2 id="context-bluetooth-to-orbit">Context: Bluetooth to orbit<a hidden class="anchor" aria-hidden="true" href="#context-bluetooth-to-orbit">#</a></h2>
+<p>A few years ago, we worked on an ESA-funded study of a low-power IoT link via geostationary satellites, so Hubble&rsquo;s claim that an unmodified BLE SoC could reach orbit immediately caught our attention.</p>
+<p>GEO and LEO satellites offer very different trade-offs. A GEO satellite remains fixed relative to the ground, providing continuous coverage of the same area and making two-way communication practical. The downside is distance: at 2.48 GHz, the free-space path loss is about 191 dB, roughly 35 dB higher than for a LEO satellite overhead at an altitude of 590 km. That extra path loss makes communication with a GEO satellite much more demanding for a low-power device.</p>
+<p>LEO satellites, by contrast, pass much closer to the ground, reducing path loss enough to make Hubble&rsquo;s approach—a +20 dBm transmitter using a PCB antenna—plausible. But these satellites move across the sky, so connectivity is available only during passes. In Hubble&rsquo;s approach, messages are sent one-way and can take up to six hours to be delivered. This makes the technology well suited to telemetry that can tolerate delays, but less suitable for applications that require continuous connectivity or a quick response. Despite these limitations, we found the technology very interesting and wanted to give a test a go.</p>
+<p>Hubble runs two networks. The <strong>terrestrial</strong> network picks up ordinary BLE advertisements through phones and gateways. The <strong>satellite</strong> network uses the same 2.4 GHz radio hardware, but with a dedicated waveform: according to Hubble&rsquo;s <a href="https://hubble.com/docs/network/satellite/regulatory-compliance">regulatory page</a> it is a frequency-hopping system on 19 channels at the band edge, above 2.481 GHz, with an always-on preamble and a lower bit rate than standard BLE advertising. In other words, a standard BLE advertising sample won&rsquo;t reach the satellites: Hubble&rsquo;s satellite protocol uses its own channel plan and transmission format, rather than standard BLE advertising on channel 39.</p>
+<p>The device side needs a supported SoC, the Hubble Device SDK, and at least +20 dBm <strong>radiated</strong> power. Most BLE chips output 0 to 8 dBm, so the +20 dBm xG24 radio board is one of the simplest ways in. Hubble lists the EFR32xG24 +20 dBm kit as a validated satellite platform on its <a href="https://hubble.com/docs/compatibility">compatibility page</a>.</p>
+<p>The link is one-way. The device transmits and never receives an acknowledgement. Packets come down through Hubble&rsquo;s ground segment and are supposed to appear in the Dashboard within six hours of a pass. The only end-to-end test is to transmit and then check the Dashboard.</p>
+<h2 id="setup">Setup<a hidden class="anchor" aria-hidden="true" href="#setup">#</a></h2>
+<table>
+  <thead>
+      <tr>
+          <th>Item</th>
+          <th>Identity</th>
+          <th>Role</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Radio board</td>
+          <td>Silicon Labs BRD4187C Rev A00, EFR32MG24B220F1536IM48, +20 dBm, PCB antenna (U.FL connector path not connected)</td>
+          <td>Satellite transmitter</td>
+      </tr>
+      <tr>
+          <td>Mainboard</td>
+          <td>BRD4001A Rev A01 (WSTK)</td>
+          <td>J-Link programming, VCOM, bench power</td>
+      </tr>
+      <tr>
+          <td>Second board</td>
+          <td>ESP32-C6 SuperMini (ESP32-C6FH4), ESP-IDF 5.5.5</td>
+          <td>Comparison transmitter</td>
+      </tr>
+      <tr>
+          <td>Receivers</td>
+          <td>HackRF One (Nooelec case, TCXO) + Android RF analyser app; Signal Hound BB60C + Spike; ESPARGOS</td>
+          <td>Local OTA verification</td>
+      </tr>
+      <tr>
+          <td>Firmware</td>
+          <td>Hubble Device SDK <code>samples/zephyr/sat-continuous</code>, Zephyr <code>v4.4.0-10782-gcc4eb97a7fd7</code></td>
+          <td>Continuous transmit loop</td>
+      </tr>
+      <tr>
+          <td>Toolchain</td>
+          <td>Windows, Python 3.12.10, west 1.5.0, CMake 4.4.2, Zephyr SDK 1.0.1</td>
+          <td>Build host</td>
+      </tr>
+      <tr>
+          <td>Registration</td>
+          <td>Hubble Dashboard, Sandbox org, DEVICE UPTIME counter, AES-256-CTR</td>
+          <td>Device credentials</td>
+      </tr>
+      <tr>
+          <td>Power supply</td>
+          <td><strong>Bench:</strong> WSTK powered by a RAVPower RP-PB31 power bank, monitored with an FNB58 power meter. <strong>Field:</strong> radio board powered by an 18650 cell through an ST LDO (marking <code>LL33</code>).</td>
+          <td>Bench and rooftop power supply chain</td>
+      </tr>
+      <tr>
+          <td>Site</td>
+          <td>Flat roof, Budapest (47.5° N), open sky, board on a 20 to 30 cm non-conductive spacer</td>
+          <td></td>
+      </tr>
+  </tbody>
+</table>
+<p>We did not record the Hubble Device SDK commit hash used for the test. The SDK was checked out from the <code>main</code> branch as of mid-August 2026. This limits reproducibility and is discussed further in the Limitations section.</p>
+<h2 id="how-the-satellite-path-works">How the satellite path works<a hidden class="anchor" aria-hidden="true" href="#how-the-satellite-path-works">#</a></h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl"> EFR32xG24 (Zephyr + Hubble SDK)
+</span></span><span class="line"><span class="cl">   key (AES-256) + counter (DEVICE UPTIME) + 0/4/9/13-byte payload
+</span></span><span class="line"><span class="cl">        │  FHSS bursts, 19 ch above 2.481 GHz, +20 dBm conducted
+</span></span><span class="line"><span class="cl">        ▼  PCB antenna
+</span></span><span class="line"><span class="cl">   ~600–1100 km slant range (LEO, ~590 km altitude)
+</span></span><span class="line"><span class="cl">        ▼
+</span></span><span class="line"><span class="cl"> Hubble satellite (phased-array receiver)
+</span></span><span class="line"><span class="cl">        ▼  store and forward, ≤ 6 h
+</span></span><span class="line"><span class="cl"> Hubble cloud: decrypt, attribute to device ID  ──►  Dashboard
+</span></span></code></pre></div><p>For a packet to appear in the Dashboard, the entire path must work: the device must transmit successfully, a satellite must receive the burst, and Hubble&rsquo;s ground segment and backend must process the packet correctly.</p>
+<p>The device registration and transmission configuration must also agree. According to the configuration used for this test, the relevant parameters include the device key, counter source (<code>DEVICE UPTIME</code> or <code>UNIX_TIME</code>), and key size. A mismatch may prevent successful packet processing even when the RF transmission itself is correct.</p>
+<p>This makes an empty Dashboard inherently ambiguous. It does not tell us whether a burst failed to reach a satellite, whether the satellite was listening over the test location, or whether a received packet was rejected during backend processing. Without an acknowledgement or an independent indication of satellite reception, these failure modes can look identical from the device side.</p>
+<h2 id="bring-up-on-windows">Bring-up on Windows<a hidden class="anchor" aria-hidden="true" href="#bring-up-on-windows">#</a></h2>
+<p>The full step-by-step procedure is in the <em>Try it</em> section. These were the main issues we encountered in order:</p>
+<ul>
+<li>Python 3.14 lacked compatible wheels for <code>grpcio-tools</code> and <code>hidapi</code>. Python 3.12 resolved the issue. We reported this upstream.</li>
+<li><strong>Build tools:</strong> Installing CMake and Ninja in the virtual environment fixed <code>west zephyr-export</code>.</li>
+<li>The Zephyr SDK <code>setup.cmd</code> could not find <code>7z</code> on PATH, even though the archive tool had just used it. Adding <code>C:\Program Files\7-Zip</code> to PATH fixed it.</li>
+<li>Unknown <code>HUBBLE_*</code> Kconfig symbols appeared because we had cloned the SDK next to an existing Zephyr workspace. Using the SDK as the west manifest (or adding it to the manifest) fixed it.</li>
+<li>Passing the Base64 key through PowerShell → west → CMake produced <em>malformed string literal … Assignment ignored</em>. The build went through anyway. <strong>A key in a separate <code>.conf</code> file avoids the quoting problem.</strong></li>
+<li>The Silicon Labs radio path links against the RAIL library, which needs <code>west blobs fetch hal_silabs</code>.</li>
+</ul>
+<p>Blinky built for <code>xg24_rb4187c</code> (26 400 B flash, 4 136 B RAM) and flashed through the WSTK&rsquo;s J-Link. The <code>sat-continuous</code> sample then booted with:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">*** Booting Zephyr OS build v4.4.0-10782-gcc4eb97a7fd7 ***
+</span></span><span class="line"><span class="cl">&lt;inf&gt; hubblenetwork: Hubble Device SDK initialized
+</span></span><span class="line"><span class="cl">      (HDCV:1.0/E:256/CS:DU/EC:128/RP:S86400/N:S/SV:0)
+</span></span><span class="line"><span class="cl">&lt;inf&gt; hubblenetwork: Hubble Satellite packet sent
+</span></span><span class="line"><span class="cl">&lt;inf&gt; hubblenetwork: Hubble Satellite packet sent
+</span></span></code></pre></div><p>The fields that matter: <code>E:256</code> is AES-256, <code>CS:DU</code> is the DEVICE UPTIME counter, and <code>N:S</code> means satellite mode. Consecutive log timestamps are 10.329 s apart. <em>Packet sent</em> means only that the send call returned. It says nothing about whether a satellite received anything.</p>
+<figure>
+  <a href="efr32xg24b-ufl-and-meander.jpg"><img src="efr32xg24b-ufl-and-meander.jpg" alt="Close-up of the BRD4187C radio board with the U.FL footprint and the PCB antenna" loading="lazy"></a>
+  <figcaption>The whole field test ran on the on-board PCB antenna (default assembly option of the radio board). The U.FL connector is not in the RF path unless the 0 Ω selector is moved, so a cable on the U.FL alone would have done nothing.</figcaption>
+</figure>
+<h2 id="results-is-it-actually-transmitting">Results: is it actually transmitting?<a hidden class="anchor" aria-hidden="true" href="#results-is-it-actually-transmitting">#</a></h2>
+<p>We checked the transmitter at four levels, and each level proves something different:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Check</th>
+          <th>Proves</th>
+          <th>Does not prove</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Boot log with <code>N:S</code> and periodic <em>sent</em></td>
+          <td>Firmware reaches the TX path</td>
+          <td>RF output</td>
+      </tr>
+      <tr>
+          <td>Spectrum/waterfall bursts near 2.482 GHz</td>
+          <td>RF at the right place and period</td>
+          <td>Framing, key, link margin</td>
+      </tr>
+      <tr>
+          <td>Burst spectrum</td>
+          <td>Narrowband bursts at the band edge</td>
+          <td>That Hubble can decode it</td>
+      </tr>
+      <tr>
+          <td>Packet in Dashboard</td>
+          <td>End-to-end</td>
+          <td>Reliability over many passes</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="hackrf-bursts-at-the-band-edge">HackRF: bursts at the band edge<a hidden class="anchor" aria-hidden="true" href="#hackrf-bursts-at-the-band-edge">#</a></h3>
+<p>With the HackRF on the roof next to the box, the Android RF analyser app (2482 MHz centre, 20 MHz span) showed a burst every ~10 s just above 2481 MHz, about 10 dB above the noise floor on the averaged trace.</p>
+<figure class="portrait">
+  <a href="rf-analyzer-2482mhz-2026-08-26.jpg"><img src="rf-analyzer-2482mhz-2026-08-26.jpg" alt="Android RF analyser with HackRF: spectrum centred at 2482 MHz with a burst just below the centre marker" loading="lazy"></a>
+  <figcaption>Every ~10 s a short burst shows up at the 2.4 GHz band edge, above the last BLE advertising channel. That is where Hubble's satellite channels are. The fainter traces to the left were not identified.</figcaption>
+</figure>
+<h3 id="bb60c-capture">BB60C capture<a hidden class="anchor" aria-hidden="true" href="#bb60c-capture">#</a></h3>
+<p>To go beyond a waterfall, we pointed a Signal Hound BB60C signal analyser with a 2.4 GHz antenna at the board (antenna to antenna, short distance, no cable). The marker read −12.4 dBm peak at 2.4825 GHz in one session and −16.5 dBm in another. These are <strong>relative</strong> numbers: we did not calibrate antenna gains or distance, so they say nothing about EIRP. We also measured a carrier at <strong>2.482578 GHz</strong>.</p>
+<p>We cannot identify the modulation from these captures. In our view it is a narrowband, frequency-hopping waveform, possibly with an FSK core, rather than standard BLE GFSK. OFDM is a weaker candidate: its peak-to-average power would cost the transmitter efficiency, which a battery-powered endpoint can ill afford.</p>
+<!-- TODO: re-add BB60C screenshot f461ca51-0c82-4aca-8fa0-8a2c74bd75ef.jpg -->
+<!-- TODO: re-add BB60C screenshot 8b945786-f9e1-47e7-8555-349056f9c9d6.jpg -->
+<p>ESPARGOS (the ESP32-based coherent receiver array) also picked up the bursts, which gave us an independent confirmation by a third receiver.</p>
+<h3 id="the-step-we-skipped">The step we skipped<a hidden class="anchor" aria-hidden="true" href="#the-step-we-skipped">#</a></h3>
+<p>Hubble&rsquo;s <a href="https://hubble.com/docs/network/satellite/quick-start">quick start guide</a> describes a more conclusive local test using an ADALM-PLUTO SDR and <code>pyhubblenetwork</code>. This setup can decode captured packets using your device key and associate them with your device ID, helping verify the transmission format and configuration independently of the satellite network.</p>
+<p>We did not run this test. In hindsight, it is the first thing we would do next time: verify that our transmissions can be decoded locally before investigating satellite reception or backend delivery.</p>
+<h2 id="the-field-test">The field test<a hidden class="anchor" aria-hidden="true" href="#the-field-test">#</a></h2>
+<p>We deployed the boards on the rooftop in early August and left them running until late September, with occasional interruptions for reflashing. We tested two EFR32xG24 boards, each with its own registered device key. We later added an ESP32-C6 board (a chip family supported by Hubble&rsquo;s ESP-IDF sample) as a comparison transmitter. All boards were positioned on a 20–30 cm plastic spacer above the roof membrane, with an unobstructed view of the sky.</p>
+<figure>
+  <a href="roof-box-over-city.jpg"><img src="roof-box-over-city.jpg" alt="The transmitter box on the roof at dusk with the Budapest skyline behind it" loading="lazy"></a>
+  <figcaption>The view of the sky was about as open as you can get in a city. At no point was the transmitter's location the limiting factor.</figcaption>
+</figure>
+<p>Look4Sat with current TLEs gave plenty of high passes. HUBBLE 6 (NORAD 64562) reached 80.3° at 01:11 local on 8 August, and HUBBLE 7 (NORAD 64592) had regular passes in the 45° to 50° range. The predicted horizon-to-horizon duration was about 12.5 minutes at 590 to 594 km.</p>
+<figure class="portrait">
+  <a href="look4sat-hubble6-7-passes.jpg"><img src="look4sat-hubble6-7-passes.jpg" alt="Look4Sat pass list for HUBBLE 6 and HUBBLE 7 over Budapest, 8–10 August 2026" loading="lazy"></a>
+  <figcaption>There was no shortage of high passes over Budapest: several per day were recorded, some above 75°. Being able to see a satellite does not mean it is serving your location.</figcaption>
+</figure>
+<p>After every pass the Dashboard still showed <em>Recent packet: Never</em>. Over the following weeks we checked everything on our side:</p>
+<ol>
+<li><strong>Key.</strong> We checked that the Base64 key in the build matched the registration, regenerated keys, and registered a second board separately.</li>
+<li><strong>Counter mode.</strong> We confirmed <code>CS:DU</code> in the boot log against DEVICE UPTIME in the Dashboard.</li>
+<li><strong>Antenna.</strong> We kept the PCB antenna away from the roof surface, the battery and the wiring.</li>
+<li><strong>Passes.</strong> We tried high-elevation passes, at night and during the day.</li>
+<li><strong>Waiting time.</strong> We waited more than the documented six hours before calling a pass a failure.</li>
+<li><strong>A second transmitter.</strong> The ESP32-C6 also produced local RF, and its packets did not appear either.</li>
+</ol>
+<p>We contacted Hubble support with the hardware, SDK and configuration details. Their first reply asked which reference firmware and dev kit we were using.</p>
+<h3 id="what-we-were-missing">What we were missing<a hidden class="anchor" aria-hidden="true" href="#what-we-were-missing">#</a></h3>
+<p>In late September we found out, independently and by chance, that Hubble&rsquo;s satellite receivers were only providing service over the US at that point. Over Europe the constellation was effectively deaf to user uplinks. Nothing in the onboarding flow or the documentation we followed (quick start, compatibility page, SDK samples) mentioned a geographic limit. Several weeks of troubleshooting the key, the antenna and the power supply were therefore aimed at a link that could not have worked from Budapest.</p>
+<p>We wrote this up on LinkedIn. Apoorva Nori, Head of Product at Hubble Network, replied on 4 October:</p>
+<blockquote>
+<p>&ldquo;Thanks for your feedback and for being an early adopter of the SDK, Zoltán Dóczi. We&rsquo;re actively rolling out the service outside the US and have updated our documentation to be clearer about geographic coverage. We&rsquo;ll keep you updated!&rdquo;</p>
+<p>— Apoorva Nori, Hubble Network, LinkedIn, 4 October 2026</p>
+</blockquote>
+<figure>
+  <a href="hubble-linkedin-coverage-update-2026-10-04.png"><img src="hubble-linkedin-coverage-update-2026-10-04.png" alt="LinkedIn reply from Apoorva Nori, Head of Product at Hubble Network" loading="lazy"></a>
+  <figcaption>Hubble's public reply confirms the regional limit and the documentation change. It came after the test, not before.</figcaption>
+</figure>
+<p>Since then, the <a href="https://hubble.com/docs/network/satellite/transmission-guidance">transmission guidance</a> lists the coverage region as <strong>North America</strong>. That is a useful fix, and we appreciate the quick response.</p>
+<p><strong>A second blocker in the current documentation.</strong> The updated quick start guide also states that <em>“Sandbox does not have Satellite access.”</em> Satellite access requires a <em>Hubble Live</em> organisation, but our devices were registered under Sandbox.</p>
+<p>We don&rsquo;t know whether this restriction was documented when we ran our test in August, as we didn&rsquo;t save a copy of the documentation at the time. Regardless, under the current requirements, our setup would not have worked even within the satellite coverage area.</p>
+<p>If you&rsquo;re planning to repeat this experiment, confirm both satellite coverage in your region and satellite access for your account before climbing up to the roof.</p>
+<h2 id="sanity-checks">Sanity checks<a hidden class="anchor" aria-hidden="true" href="#sanity-checks">#</a></h2>
+<h3 id="orbit">Orbit<a hidden class="anchor" aria-hidden="true" href="#orbit">#</a></h3>
+<p>The HUBBLE-6 TLE from 21 September 2026 gives a mean motion of 14.937 rev/day, which is a period of 96.4 min and a semi-major axis corresponding to about <strong>594 km</strong> altitude. The inclination is 97.78°, a sun-synchronous orbit. This matches the 590 to 594 km that Look4Sat shows. Hubble&rsquo;s guidance quotes &ldquo;approximately 550 km&rdquo;, which presumably describes the constellation in general rather than these two satellites.</p>
+<p>Hubble&rsquo;s documentation gives a 3 to 5 minute useful window per pass, against 12.5 minutes horizon to horizon. That fits a receiver that only covers part of the sky: a phased array with a limited scan angle rather than an omnidirectional antenna. This is our interpretation.</p>
+<h3 id="link-budget">Link budget<a hidden class="anchor" aria-hidden="true" href="#link-budget">#</a></h3>
+<p>Free-space path loss at 2.482 GHz:</p>
+$$
+\mathrm{FSPL} = 20\log_{10} d + 20\log_{10} f - 147.55\ \mathrm{dB}
+$$<table>
+  <thead>
+      <tr>
+          <th>Elevation</th>
+          <th>Slant range</th>
+          <th>FSPL</th>
+          <th>Received power at a 0 dBi antenna for +20 dBm EIRP</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>90°</td>
+          <td>590 km</td>
+          <td>155.8 dB</td>
+          <td>−135.8 dBm</td>
+      </tr>
+      <tr>
+          <td>60°</td>
+          <td>672 km</td>
+          <td>156.9 dB</td>
+          <td>−136.9 dBm</td>
+      </tr>
+      <tr>
+          <td>45°</td>
+          <td>802 km</td>
+          <td>158.4 dB</td>
+          <td>−138.4 dBm</td>
+      </tr>
+      <tr>
+          <td>30°</td>
+          <td>1059 km</td>
+          <td>160.8 dB</td>
+          <td>−140.8 dBm</td>
+      </tr>
+  </tbody>
+</table>
+<p>A 1 MHz receiver bandwidth has a thermal noise floor of −114 dBm. A 0 dBi antenna would therefore leave the signal more than 20 dB below the noise. To close the link, the satellite needs a high-gain array (Hubble&rsquo;s material mentions more than 100 elements, which is roughly 20 dB of gain), processing gain from coding and repetition, and a full +20 dBm actually <em>radiated</em>. That last point is a problem for the radio board. Its small PCB antenna almost certainly has an efficiency well below 100 %, so +20 dBm <em>conducted</em> probably means less than +20 dBm <em>radiated</em>. Hubble&rsquo;s guidance warns that PCB and chip antennas reduce coverage and recommends a dipole. We cannot test this without coverage, but <strong>a dipole on the U.FL path would be our first hardware change</strong> for a supported-region test.</p>
+<h3 id="doppler">Doppler<a hidden class="anchor" aria-hidden="true" href="#doppler">#</a></h3>
+<p>At about 7.57 km/s orbital velocity and 590 km altitude, the largest line-of-sight velocity near the horizon is about 6.9 km/s. At 2.482 GHz this gives a Doppler shift of up to about <strong>±57 kHz</strong>. That is not negligible: if the 19 channels share the 2.481–2.4835 GHz edge, the spacing is only about 130 kHz, so the receiver must compensate. It can, because the satellite knows its own ephemeris and the shift follows a predictable curve over the pass. In our view, Doppler combined with crystal tolerance was not a plausible reason for the missing packets, even though it was one of the first theories we considered.</p>
+<h3 id="battery-life-estimate-versus-measurement">Battery life: estimate versus measurement<a hidden class="anchor" aria-hidden="true" href="#battery-life-estimate-versus-measurement">#</a></h3>
+<p>A first estimate assumed a 50 ms burst at 150 mA every 10 s and a 100 µA sleep current. That gives an average of about 0.85 mA, which would mean around <strong>80 days</strong> from a 2800 mAh 18650 cell through a low-dropout LDO. The measured runtime in the field was about <strong>two weeks</strong>, which means an average of roughly <strong>7 to 8 mA</strong>.</p>
+<p>The difference is not mysterious. The <code>sat-continuous</code> sample is a bring-up loop, not a low-power application. The board&rsquo;s LED was visibly on at night. The ST LDO has a quiescent current in the hundreds of µA, and we never measured the real TX pulse or the sleep current. The bench setup drew 159 mA at 5.065 V from the power bank, but that number includes the WSTK and its debugger and says nothing about the radio itself. <strong>Runtime estimates for this sample are meaningless until you measure the current trace.</strong></p>
+<figure>
+  <a href="wstk-xg24-usb-meter.jpg"><img src="wstk-xg24-usb-meter.jpg" alt="WSTK with the radio board powered through an FNB58 USB meter showing 5.065 V, 0.159 A" loading="lazy"></a>
+  <figcaption>159 mA at 5 V is what the whole WSTK draws, debugger included. Most of that current does not go to the radio, and none of it describes the radio's TX pulse.</figcaption>
+</figure>
+<figure>
+  <a href="taped-18650-supply.jpg"><img src="taped-18650-supply.jpg" alt="The radio board and a taped 18650 cell with a small LDO board inside a plastic box" loading="lazy"></a>
+  <figcaption>In the standalone field configuration, an 18650 cell feeds an ST LDO that supplies 3.3 V to the radio board. It ran for about two weeks, roughly a tenth of the estimate.</figcaption>
+</figure>
+<h3 id="the-satellites-are-alive">The satellites are alive<a hidden class="anchor" aria-hidden="true" href="#the-satellites-are-alive">#</a></h3>
+<p>A fellow radio amateur pointed out that the Hubble satellites also have FCC-filed frequencies around 400 MHz, and that SatNOGS monitors them. HUBBLE-6 telemetry at 401.1 MHz (GMSK, 4800 Bd, AX.25) was recorded on 13 September 2026 by station 3020, Jim Hutchison, North Carolina and on 19 August 2026 by station 2178, DIYSATELLITE, Uruguay. The AX.25 address fields decode by shifting each byte right by one:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">8A A6 8E A6 60 62 E0  →  dest &#34;ESGS01&#34;
+</span></span><span class="line"><span class="cl">90 AA 84 84 98 6C E1  →  src  &#34;HUBBL6&#34;
+</span></span><span class="line"><span class="cl">03 F0                 →  UI frame, no layer 3
+</span></span></code></pre></div><p>The rest of each frame is binary telemetry, which we did not try to interpret. These frames are the satellite&rsquo;s own downlink. They are <strong>not</strong> acknowledgements of our 2.4 GHz uplink. They do show that HUBBLE-6 was healthy and on orbit while our packets went nowhere. A nice detail: the Uruguay station received the satellite in mid-August, when nothing we sent from Budapest arrived.</p>
+<h2 id="myths-we-had-to-unlearn">Myths we had to unlearn<a hidden class="anchor" aria-hidden="true" href="#myths-we-had-to-unlearn">#</a></h2>
+<p>During bring-up we used an AI chat assistant. Several of its answers sounded confident and were wrong, and some of them sent us after the wrong problem for days:</p>
+<ul>
+<li><strong>&ldquo;If the key were wrong, it wouldn&rsquo;t compile.&rdquo;</strong> It compiles. An empty key builds and runs with an all-zero placeholder, and you only get a warning at boot. A valid key from the wrong registration passes every local check. Only the backend can catch it.</li>
+<li><strong>&ldquo;It&rsquo;s a BLE advertisement on channel 39.&rdquo;</strong> It is not. The satellite mode hops over 19 channels above 2.481 GHz and uses its own framing. A BLE sniffer looking for <code>0x8E89BED6</code> will not find it.</li>
+<li><strong>&ldquo;Hubble has two satellites, Hubble-1 and -2.&rdquo;</strong> That information is out of date. The passes we planned around were HUBBLE 6 and HUBBLE 7, both launched in 2025 (COSPAR 2025-135).</li>
+<li><strong>&ldquo;The roof detuned the antenna and 90 % of the power was reflected.&rdquo;</strong> Nobody measured that. A spacer is good practice, but it was not the cause.</li>
+<li><strong>&ldquo;A high pass means the satellite will hear you.&rdquo;</strong> Only if the service covers your location and your account includes satellite access.</li>
+</ul>
+<h2 id="limitations-and-open-questions">Limitations and open questions<a hidden class="anchor" aria-hidden="true" href="#limitations-and-open-questions">#</a></h2>
+<ul>
+<li><strong>No end-to-end validation.</strong> We never saw a packet delivered, so we cannot vouch for the complete chain. We can only say that our transmitter produced plausible RF.</li>
+<li><strong>No local decrypt.</strong> The Pluto plus <code>pyhubblenetwork</code> test is the missing middle step.</li>
+<li><strong>No calibrated EIRP.</strong> The over-the-air readings are relative. With a PCB antenna, it is possible that the board does not meet Hubble&rsquo;s requirement of at least +20 dBm <em>radiated</em>.</li>
+<li><strong>SDK commit not recorded.</strong> Zephyr is pinned, but the Hubble SDK was <code>main</code> from mid-August.</li>
+<li><strong>Sandbox vs Live.</strong> We do not know what the documentation said about this in August.</li>
+<li><strong>Power numbers are approximate.</strong> We have no current trace, only the field runtime.</li>
+<li><strong>The ESP32-C6 run</strong> produced local RF, but we did not record its PHY library setup completely.</li>
+</ul>
+<p>We would repeat the test as soon as coverage reaches Europe, with a Live account, a dipole on the U.FL path, a Pluto decode before the roof, and a current probe.</p>
+<h2 id="try-it">Try it<a hidden class="anchor" aria-hidden="true" href="#try-it">#</a></h2>
+<p><strong>Before anything else:</strong> confirm with Hubble that your organisation has <em>Hubble Live with Satellite</em> (Sandbox does not include it) and that the service covers your test coordinates. When we checked on 5 October 2026, the coverage region was North America.</p>
+<p><strong>1. Workspace (PowerShell, Python 3.12, Git, 7-Zip, SEGGER J-Link installed):</strong></p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-powershell" data-lang="powershell"><span class="line"><span class="cl"><span class="nb">New-Item</span> <span class="n">-ItemType</span> <span class="n">Directory</span> <span class="n">-Force</span> <span class="n">-Path</span> <span class="n">C:</span><span class="p">\</span><span class="n">dev</span><span class="p">\</span><span class="nb">hubble-xg24</span>
+</span></span><span class="line"><span class="cl"><span class="nb">Set-Location</span> <span class="n">C:</span><span class="p">\</span><span class="n">dev</span><span class="p">\</span><span class="nb">hubble-xg24</span>
+</span></span><span class="line"><span class="cl"><span class="n">py</span> <span class="mf">-3.12</span> <span class="n">-m</span> <span class="n">venv</span> <span class="p">.</span><span class="py">venv</span>
+</span></span><span class="line"><span class="cl"><span class="p">.\.</span><span class="n">venv</span><span class="p">\</span><span class="n">Scripts</span><span class="p">\</span><span class="n">Activate</span><span class="p">.</span><span class="py">ps1</span>
+</span></span><span class="line"><span class="cl"><span class="n">python</span> <span class="n">-m</span> <span class="n">pip</span> <span class="n">install</span> <span class="p">-</span><span class="n">-upgrade</span> <span class="n">pip</span> <span class="n">west</span> <span class="n">cmake</span> <span class="n">ninja</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">west</span> <span class="n">init</span> <span class="n">-m</span> <span class="n">https</span><span class="err">:</span><span class="p">//</span><span class="n">github</span><span class="p">.</span><span class="n">com</span><span class="p">/</span><span class="n">HubbleNetwork</span><span class="p">/</span><span class="nb">hubble-device</span><span class="n">-sdk</span><span class="p">.</span><span class="py">git</span> <span class="p">.</span>
+</span></span><span class="line"><span class="cl"><span class="n">west</span> <span class="n">update</span>
+</span></span><span class="line"><span class="cl"><span class="n">python</span> <span class="n">-m</span> <span class="n">pip</span> <span class="n">install</span> <span class="n">-r</span> <span class="p">.\</span><span class="n">zephyr</span><span class="p">\</span><span class="n">scripts</span><span class="p">\</span><span class="n">requirements</span><span class="p">.</span><span class="py">txt</span>
+</span></span><span class="line"><span class="cl"><span class="n">west</span> <span class="nb">zephyr-export</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">$env:Path</span> <span class="p">+=</span> <span class="s2">&#34;;C:\Program Files\7-Zip&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="n">west</span> <span class="n">sdk</span> <span class="n">install</span>
+</span></span><span class="line"><span class="cl"><span class="n">west</span> <span class="n">blobs</span> <span class="n">fetch</span> <span class="n">hal_silabs</span>
+</span></span></code></pre></div><p><strong>2. Prove that programming works:</strong></p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-powershell" data-lang="powershell"><span class="line"><span class="cl"><span class="n">west</span> <span class="n">build</span> <span class="n">-p</span> <span class="n">always</span> <span class="n">-b</span> <span class="n">xg24_rb4187c</span> <span class="p">.\</span><span class="n">zephyr</span><span class="p">\</span><span class="n">samples</span><span class="p">\</span><span class="n">basic</span><span class="p">\</span><span class="n">blinky</span>
+</span></span><span class="line"><span class="cl"><span class="n">west</span> <span class="n">flash</span>
+</span></span></code></pre></div><p><strong>3. Register the device</strong> in the Dashboard with DEVICE UPTIME and AES-256-CTR. Save the Base64 key right away: it is shown only once, and the UUID shown later is the device ID, not the key.</p>
+<p><strong>4. Put the key in a file instead of on the command line.</strong> Create <code>samples/zephyr/sat-continuous/local-device.conf</code> and add it to <code>.git/info/exclude</code>:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-ini" data-lang="ini"><span class="line"><span class="cl"><span class="na">CONFIG_SAMPLE_HUBBLE_KEY</span><span class="o">=</span><span class="s">&#34;YOUR_BASE64_KEY&#34;</span>
+</span></span></code></pre></div><p><strong>5. Build, flash and check the boot log</strong> for <code>E:256/CS:DU/…/N:S</code>:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-powershell" data-lang="powershell"><span class="line"><span class="cl"><span class="n">west</span> <span class="n">build</span> <span class="n">-p</span> <span class="n">always</span> <span class="n">-b</span> <span class="n">xg24_rb4187c</span> <span class="p">.\</span><span class="n">modules</span><span class="p">\</span><span class="n">lib</span><span class="p">\</span><span class="nb">hubblenetwork-sdk</span><span class="p">\</span><span class="n">samples</span><span class="p">\</span><span class="n">zephyr</span><span class="p">\</span><span class="nb">sat-continuous</span> <span class="p">--</span> <span class="n">-DEXTRA_CONF_FILE</span><span class="p">=</span><span class="nb">local-device</span><span class="p">.</span><span class="py">conf</span>
+</span></span><span class="line"><span class="cl"><span class="n">west</span> <span class="n">flash</span>
+</span></span></code></pre></div><p><strong>6. Decrypt locally before you go up on the roof</strong> (ADALM-PLUTO, Docker):</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-powershell" data-lang="powershell"><span class="line"><span class="cl"><span class="n">python</span> <span class="n">-m</span> <span class="n">pip</span> <span class="n">install</span> <span class="n">pyhubblenetwork</span>
+</span></span><span class="line"><span class="cl"><span class="n">hubblenetwork</span> <span class="n">sat</span> <span class="n">scan</span> <span class="p">-</span><span class="n">-key</span> <span class="s2">&#34;YOUR_BASE64_KEY&#34;</span>
+</span></span></code></pre></div><p><strong>7. Payload:</strong> the size must be exactly 0, 4, 9 or 13 bytes. For example:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">static</span> <span class="k">const</span> <span class="kt">uint8_t</span> <span class="n">payload</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span> <span class="mh">0x01</span><span class="p">,</span> <span class="mh">0x2A</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span> <span class="p">};</span>
+</span></span><span class="line"><span class="cl"><span class="n">err</span> <span class="o">=</span> <span class="nf">hubble_sat_packet_get</span><span class="p">(</span><span class="o">&amp;</span><span class="n">pkt</span><span class="p">,</span> <span class="n">payload</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">payload</span><span class="p">));</span>
+</span></span></code></pre></div><p><strong>Troubleshooting by symptom</strong></p>
+<table>
+  <thead>
+      <tr>
+          <th>Symptom</th>
+          <th>Cause in our case</th>
+          <th>Fix</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>pip builds <code>grpcio-tools</code>/<code>hidapi</code> from source and fails</td>
+          <td>Python 3.14</td>
+          <td>Python 3.12 venv</td>
+      </tr>
+      <tr>
+          <td><em>CMake is not installed</em></td>
+          <td>Not in the venv</td>
+          <td><code>pip install cmake ninja</code></td>
+      </tr>
+      <tr>
+          <td><code>setup.cmd</code> can&rsquo;t find <code>7z</code></td>
+          <td>PATH</td>
+          <td>Add the 7-Zip directory</td>
+      </tr>
+      <tr>
+          <td>Unknown <code>HUBBLE_*</code> Kconfig symbols</td>
+          <td>SDK not in the west manifest</td>
+          <td>Use the SDK as the manifest</td>
+      </tr>
+      <tr>
+          <td><em>malformed string literal … Assignment ignored</em></td>
+          <td>PowerShell quoting</td>
+          <td><code>EXTRA_CONF_FILE</code></td>
+      </tr>
+      <tr>
+          <td>RAIL library missing at link time</td>
+          <td>Blob not fetched</td>
+          <td><code>west blobs fetch hal_silabs</code></td>
+      </tr>
+      <tr>
+          <td>Boot warns about a placeholder key</td>
+          <td>Key empty</td>
+          <td>Supply the key, pristine build</td>
+      </tr>
+      <tr>
+          <td>RF visible, Dashboard empty</td>
+          <td>Region, account type, key or counter mismatch</td>
+          <td>Check region and account first, then decode locally</td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>ESP32-C6:</strong> use <code>samples/esp-idf/sat-continuous</code>, run <code>idf.py set-target esp32c6</code>, then <code>menuconfig</code>, then <code>build flash monitor</code>. Here the key option is called <code>CONFIG_HUBBLE_DEVICE_KEY</code>, not <code>CONFIG_SAMPLE_HUBBLE_KEY</code>. Do not overwrite <code>sdkconfig.defaults</code> with the key line alone, because that deletes the satellite and counter settings. The PHY library requirements depend on the ESP-IDF version; see the ESP-IDF integration guide. The ESP32-S3 is not a supported satellite target.</p>
+<p><strong>References:</strong> <a href="https://github.com/HubbleNetwork/hubble-device-sdk">Hubble Device SDK</a> · <a href="https://hubble.com/docs/network/satellite/quick-start">Satellite quick start</a> · <a href="https://hubble.com/docs/network/satellite/transmission-guidance">Transmission guidance</a> · <a href="https://hubble.com/docs/network/satellite/regulatory-compliance">Regulatory guidance</a> · <a href="https://hubble.com/docs/compatibility">Chip compatibility</a> · <a href="https://docs.zephyrproject.org/latest/develop/getting_started/index.html">Zephyr getting started</a></p>
+<hr>
+<p><em>Updated: 5 October 2026. The documentation was rechecked after Hubble&rsquo;s reply; the observations above are from August–September 2026.</em></p>
+<p><em>Disclosure: all hardware was our own, and Hubble Network, Silicon Labs and Espressif had no involvement in the test. An AI chat assistant was used during bring-up (see &ldquo;Myths&rdquo;), and this article was prepared with the help of Claude.</em></p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+      <li><a href="http://127.0.0.1:1313/blog/tags/hubble/">Hubble</a></li>
+      <li><a href="http://127.0.0.1:1313/blog/tags/satellite-iot/">Satellite-Iot</a></li>
+      <li><a href="http://127.0.0.1:1313/blog/tags/ble/">Ble</a></li>
+      <li><a href="http://127.0.0.1:1313/blog/tags/efr32xg24/">Efr32xg24</a></li>
+      <li><a href="http://127.0.0.1:1313/blog/tags/zephyr/">Zephyr</a></li>
+      <li><a href="http://127.0.0.1:1313/blog/tags/hackrf/">Hackrf</a></li>
+      <li><a href="http://127.0.0.1:1313/blog/tags/bb60c/">Bb60c</a></li>
+    </ul>
+
+<ul class="share-buttons">
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Hubble Network on a Silicon Labs xG24: &#43;20 dBm radio board, Eight Weeks on a Budapest Roof, Zero Packets on x"
+            href="https://x.com/intent/tweet/?text=Hubble%20Network%20on%20a%20Silicon%20Labs%20xG24%3a%20%2b20%20dBm%20radio%20board%2c%20Eight%20Weeks%20on%20a%20Budapest%20Roof%2c%20Zero%20Packets&amp;url=http%3a%2f%2f127.0.0.1%3a1313%2fblog%2fposts%2fhubble-satellite-link-test%2f&amp;hashtags=hubble%2csatellite-iot%2cble%2cefr32xg24%2czephyr%2chackrf%2cbb60c">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M512 62.554 L 512 449.446 C 512 483.97 483.97 512 449.446 512 L 62.554 512 C 28.03 512 0 483.97 0 449.446 L 0 62.554 C 0 28.03 28.029 0 62.554 0 L 449.446 0 C 483.971 0 512 28.03 512 62.554 Z M 269.951 190.75 L 182.567 75.216 L 56 75.216 L 207.216 272.95 L 63.9 436.783 L 125.266 436.783 L 235.9 310.383 L 332.567 436.783 L 456 436.783 L 298.367 228.367 L 432.367 75.216 L 371.033 75.216 Z M 127.633 110 L 164.101 110 L 383.481 400.065 L 349.5 400.065 Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Hubble Network on a Silicon Labs xG24: &#43;20 dBm radio board, Eight Weeks on a Budapest Roof, Zero Packets on linkedin"
+            href="https://www.linkedin.com/shareArticle?mini=true&amp;url=http%3a%2f%2f127.0.0.1%3a1313%2fblog%2fposts%2fhubble-satellite-link-test%2f&amp;title=Hubble%20Network%20on%20a%20Silicon%20Labs%20xG24%3a%20%2b20%20dBm%20radio%20board%2c%20Eight%20Weeks%20on%20a%20Budapest%20Roof%2c%20Zero%20Packets&amp;summary=Hubble%20Network%20on%20a%20Silicon%20Labs%20xG24%3a%20%2b20%20dBm%20radio%20board%2c%20Eight%20Weeks%20on%20a%20Budapest%20Roof%2c%20Zero%20Packets&amp;source=http%3a%2f%2f127.0.0.1%3a1313%2fblog%2fposts%2fhubble-satellite-link-test%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-288.985,423.278l0,-225.717l-75.04,0l0,225.717l75.04,0Zm270.539,0l0,-129.439c0,-69.333 -37.018,-101.586 -86.381,-101.586c-39.804,0 -57.634,21.891 -67.617,37.266l0,-31.958l-75.021,0c0.995,21.181 0,225.717 0,225.717l75.02,0l0,-126.056c0,-6.748 0.486,-13.492 2.474,-18.315c5.414,-13.475 17.767,-27.434 38.494,-27.434c27.135,0 38.007,20.707 38.007,51.037l0,120.768l75.024,0Zm-307.552,-334.556c-25.674,0 -42.448,16.879 -42.448,39.002c0,21.658 16.264,39.002 41.455,39.002l0.484,0c26.165,0 42.452,-17.344 42.452,-39.002c-0.485,-22.092 -16.241,-38.954 -41.943,-39.002Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Hubble Network on a Silicon Labs xG24: &#43;20 dBm radio board, Eight Weeks on a Budapest Roof, Zero Packets on reddit"
+            href="https://reddit.com/submit?url=http%3a%2f%2f127.0.0.1%3a1313%2fblog%2fposts%2fhubble-satellite-link-test%2f&title=Hubble%20Network%20on%20a%20Silicon%20Labs%20xG24%3a%20%2b20%20dBm%20radio%20board%2c%20Eight%20Weeks%20on%20a%20Budapest%20Roof%2c%20Zero%20Packets">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-3.446,265.638c0,-22.964 -18.616,-41.58 -41.58,-41.58c-11.211,0 -21.361,4.457 -28.841,11.666c-28.424,-20.508 -67.586,-33.757 -111.204,-35.278l18.941,-89.121l61.884,13.157c0.756,15.734 13.642,28.29 29.56,28.29c16.407,0 29.706,-13.299 29.706,-29.701c0,-16.403 -13.299,-29.702 -29.706,-29.702c-11.666,0 -21.657,6.792 -26.515,16.578l-69.105,-14.69c-1.922,-0.418 -3.939,-0.042 -5.585,1.036c-1.658,1.073 -2.811,2.761 -3.224,4.686l-21.152,99.438c-44.258,1.228 -84.046,14.494 -112.837,35.232c-7.468,-7.164 -17.589,-11.591 -28.757,-11.591c-22.965,0 -41.585,18.616 -41.585,41.58c0,16.896 10.095,31.41 24.568,37.918c-0.639,4.135 -0.99,8.328 -0.99,12.576c0,63.977 74.469,115.836 166.33,115.836c91.861,0 166.334,-51.859 166.334,-115.836c0,-4.218 -0.347,-8.387 -0.977,-12.493c14.564,-6.47 24.735,-21.034 24.735,-38.001Zm-119.474,108.193c-20.27,20.241 -59.115,21.816 -70.534,21.816c-11.428,0 -50.277,-1.575 -70.522,-21.82c-3.007,-3.008 -3.007,-7.882 0,-10.889c3.003,-2.999 7.882,-3.003 10.885,0c12.777,12.781 40.11,17.317 59.637,17.317c19.522,0 46.86,-4.536 59.657,-17.321c3.016,-2.999 7.886,-2.995 10.885,0.008c3.008,3.011 3.003,7.882 -0.008,10.889Zm-5.23,-48.781c-16.373,0 -29.701,-13.324 -29.701,-29.698c0,-16.381 13.328,-29.714 29.701,-29.714c16.378,0 29.706,13.333 29.706,29.714c0,16.374 -13.328,29.698 -29.706,29.698Zm-160.386,-29.702c0,-16.381 13.328,-29.71 29.714,-29.71c16.369,0 29.689,13.329 29.689,29.71c0,16.373 -13.32,29.693 -29.689,29.693c-16.386,0 -29.714,-13.32 -29.714,-29.693Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Hubble Network on a Silicon Labs xG24: &#43;20 dBm radio board, Eight Weeks on a Budapest Roof, Zero Packets on facebook"
+            href="https://facebook.com/sharer/sharer.php?u=http%3a%2f%2f127.0.0.1%3a1313%2fblog%2fposts%2fhubble-satellite-link-test%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-106.468,0l0,-192.915l66.6,0l12.672,-82.621l-79.272,0l0,-53.617c0,-22.603 11.073,-44.636 46.58,-44.636l36.042,0l0,-70.34c0,0 -32.71,-5.582 -63.982,-5.582c-65.288,0 -107.96,39.569 -107.96,111.204l0,62.971l-72.573,0l0,82.621l72.573,0l0,192.915l-191.104,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Hubble Network on a Silicon Labs xG24: &#43;20 dBm radio board, Eight Weeks on a Budapest Roof, Zero Packets on whatsapp"
+            href="https://api.whatsapp.com/send?text=Hubble%20Network%20on%20a%20Silicon%20Labs%20xG24%3a%20%2b20%20dBm%20radio%20board%2c%20Eight%20Weeks%20on%20a%20Budapest%20Roof%2c%20Zero%20Packets%20-%20http%3a%2f%2f127.0.0.1%3a1313%2fblog%2fposts%2fhubble-satellite-link-test%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-58.673,127.703c-33.842,-33.881 -78.847,-52.548 -126.798,-52.568c-98.799,0 -179.21,80.405 -179.249,179.234c-0.013,31.593 8.241,62.428 23.927,89.612l-25.429,92.884l95.021,-24.925c26.181,14.28 55.659,21.807 85.658,21.816l0.074,0c98.789,0 179.206,-80.413 179.247,-179.243c0.018,-47.895 -18.61,-92.93 -52.451,-126.81Zm-126.797,275.782l-0.06,0c-26.734,-0.01 -52.954,-7.193 -75.828,-20.767l-5.441,-3.229l-56.386,14.792l15.05,-54.977l-3.542,-5.637c-14.913,-23.72 -22.791,-51.136 -22.779,-79.287c0.033,-82.142 66.867,-148.971 149.046,-148.971c39.793,0.014 77.199,15.531 105.329,43.692c28.128,28.16 43.609,65.592 43.594,105.4c-0.034,82.149 -66.866,148.983 -148.983,148.984Zm81.721,-111.581c-4.479,-2.242 -26.499,-13.075 -30.604,-14.571c-4.105,-1.495 -7.091,-2.241 -10.077,2.241c-2.986,4.483 -11.569,14.572 -14.182,17.562c-2.612,2.988 -5.225,3.364 -9.703,1.12c-4.479,-2.241 -18.91,-6.97 -36.017,-22.23c-13.314,-11.876 -22.304,-26.542 -24.916,-31.026c-2.612,-4.484 -0.279,-6.908 1.963,-9.14c2.016,-2.007 4.48,-5.232 6.719,-7.847c2.24,-2.615 2.986,-4.484 4.479,-7.472c1.493,-2.99 0.747,-5.604 -0.374,-7.846c-1.119,-2.241 -10.077,-24.288 -13.809,-33.256c-3.635,-8.733 -7.327,-7.55 -10.077,-7.688c-2.609,-0.13 -5.598,-0.158 -8.583,-0.158c-2.986,0 -7.839,1.121 -11.944,5.604c-4.105,4.484 -15.675,15.32 -15.675,37.364c0,22.046 16.048,43.342 18.287,46.332c2.24,2.99 31.582,48.227 76.511,67.627c10.685,4.615 19.028,7.371 25.533,9.434c10.728,3.41 20.492,2.929 28.209,1.775c8.605,-1.285 26.499,-10.833 30.231,-21.295c3.732,-10.464 3.732,-19.431 2.612,-21.298c-1.119,-1.869 -4.105,-2.99 -8.583,-5.232Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Hubble Network on a Silicon Labs xG24: &#43;20 dBm radio board, Eight Weeks on a Budapest Roof, Zero Packets on telegram"
+            href="https://telegram.me/share/url?text=Hubble%20Network%20on%20a%20Silicon%20Labs%20xG24%3a%20%2b20%20dBm%20radio%20board%2c%20Eight%20Weeks%20on%20a%20Budapest%20Roof%2c%20Zero%20Packets&amp;url=http%3a%2f%2f127.0.0.1%3a1313%2fblog%2fposts%2fhubble-satellite-link-test%2f">
+            <svg version="1.1" xml:space="preserve" viewBox="2 2 28 28" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M26.49,29.86H5.5a3.37,3.37,0,0,1-2.47-1,3.35,3.35,0,0,1-1-2.47V5.48A3.36,3.36,0,0,1,3,3,3.37,3.37,0,0,1,5.5,2h21A3.38,3.38,0,0,1,29,3a3.36,3.36,0,0,1,1,2.46V26.37a3.35,3.35,0,0,1-1,2.47A3.38,3.38,0,0,1,26.49,29.86Zm-5.38-6.71a.79.79,0,0,0,.85-.66L24.73,9.24a.55.55,0,0,0-.18-.46.62.62,0,0,0-.41-.17q-.08,0-16.53,6.11a.59.59,0,0,0-.41.59.57.57,0,0,0,.43.52l4,1.24,1.61,4.83a.62.62,0,0,0,.63.43.56.56,0,0,0,.4-.17L16.54,20l4.09,3A.9.9,0,0,0,21.11,23.15ZM13.8,20.71l-1.21-4q8.72-5.55,8.78-5.55c.15,0,.23,0,.23.16a.18.18,0,0,1,0,.06s-2.51,2.3-7.52,6.8Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Hubble Network on a Silicon Labs xG24: &#43;20 dBm radio board, Eight Weeks on a Budapest Roof, Zero Packets on ycombinator"
+            href="https://news.ycombinator.com/submitlink?t=Hubble%20Network%20on%20a%20Silicon%20Labs%20xG24%3a%20%2b20%20dBm%20radio%20board%2c%20Eight%20Weeks%20on%20a%20Budapest%20Roof%2c%20Zero%20Packets&u=http%3a%2f%2f127.0.0.1%3a1313%2fblog%2fposts%2fhubble-satellite-link-test%2f">
+            <svg version="1.1" xml:space="preserve" width="30px" height="30px" viewBox="0 0 512 512" fill="currentColor"
+                xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
+                <path
+                    d="M449.446 0C483.971 0 512 28.03 512 62.554L512 449.446C512 483.97 483.97 512 449.446 512L62.554 512C28.03 512 0 483.97 0 449.446L0 62.554C0 28.03 28.029 0 62.554 0L449.446 0ZM183.8767 87.9921H121.8427L230.6673 292.4508V424.0079H281.3328V292.4508L390.1575 87.9921H328.1233L256 238.2489z" />
+            </svg>
+        </a>
+    </li>
+</ul>
+
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+        <span>&copy; 2026 <a href="http://127.0.0.1:1313/blog/">Z2Labs Blog</a></span> · 
+
+    
+    
+    <span>
+        Powered by
+        <a href="https://gohugo.io/?utm_source=papermod" rel="noopener" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" id="top-link" class="top-link hidden" aria-label="go to top" title="Go to Top (Alt + G)" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevrons-up">
+        <polyline points="17 11 12 6 7 11"></polyline>
+        <polyline points="17 18 12 13 7 18"></polyline>
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu');
+    if (menu) {
+        
+        const scrollPosition = localStorage.getItem("menu-scroll-position");
+        if (scrollPosition) {
+            menu.scrollLeft = parseInt(scrollPosition, 10);
+        }
+        
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var toplink = document.getElementById("top-link");
+    window.onscroll = function () {
+        const scrollThreshold = window.innerHeight;
+        if (document.body.scrollTop > scrollThreshold || document.documentElement.scrollTop > scrollThreshold) {
+            toplink.classList.remove("hidden");
+        } else {
+            toplink.classList.add("hidden");
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        const html = document.querySelector("html");
+        if (html.dataset.theme === "dark") {
+            html.dataset.theme = 'light';
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            html.dataset.theme = 'dark';
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'copied!';
+            setTimeout(() => {
+                copybutton.innerHTML = 'copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

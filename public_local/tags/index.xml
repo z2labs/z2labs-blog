@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Tags on Z2Labs Blog</title>
+    <link>http://127.0.0.1:1313/blog/tags/</link>
+    <description>Recent content in Tags on Z2Labs Blog</description>
+    <generator>Hugo</generator>
+    <language>en-gb</language>
+    <lastBuildDate>Tue, 20 Oct 2026 00:00:00 +0000</lastBuildDate>
+    <atom:link href="http://127.0.0.1:1313/blog/tags/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Bb60c</title>
+      <link>http://127.0.0.1:1313/blog/tags/bb60c/</link>
+      <pubDate>Mon, 05 Oct 2026 00:00:00 +0000</pubDate>
+      <guid>http://127.0.0.1:1313/blog/tags/bb60c/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Ble</title>
+      <link>http://127.0.0.1:1313/blog/tags/ble/</link>
+      <pubDate>Mon, 05 Oct 2026 00:00:00 +0000</pubDate>
+      <guid>http://127.0.0.1:1313/blog/tags/ble/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Efr32xg24</title>
+      <link>http://127.0.0.1:1313/blog/tags/efr32xg24/</link>
+      <pubDate>Mon, 05 Oct 2026 00:00:00 +0000</pubDate>
+      <guid>http://127.0.0.1:1313/blog/tags/efr32xg24/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Hackrf</title>
+      <link>http://127.0.0.1:1313/blog/tags/hackrf/</link>
+      <pubDate>Mon, 05 Oct 2026 00:00:00 +0000</pubDate>
+      <guid>http://127.0.0.1:1313/blog/tags/hackrf/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Hubble</title>
+      <link>http://127.0.0.1:1313/blog/tags/hubble/</link>
+      <pubDate>Mon, 05 Oct 2026 00:00:00 +0000</pubDate>
+      <guid>http://127.0.0.1:1313/blog/tags/hubble/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Satellite-Iot</title>
+      <link>http://127.0.0.1:1313/blog/tags/satellite-iot/</link>
+      <pubDate>Mon, 05 Oct 2026 00:00:00 +0000</pubDate>
+      <guid>http://127.0.0.1:1313/blog/tags/satellite-iot/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Zephyr</title>
+      <link>http://127.0.0.1:1313/blog/tags/zephyr/</link>
+      <pubDate>Mon, 05 Oct 2026 00:00:00 +0000</pubDate>
+      <guid>http://127.0.0.1:1313/blog/tags/zephyr/</guid>
+      <description></description>
+    </item>
+  </channel>
+</rss>

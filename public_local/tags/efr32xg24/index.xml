@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Efr32xg24 on Z2Labs Blog</title>
+    <link>http://127.0.0.1:1313/blog/tags/efr32xg24/</link>
+    <description>Recent content in Efr32xg24 on Z2Labs Blog</description>
+    <generator>Hugo</generator>
+    <language>en-gb</language>
+    <lastBuildDate>Tue, 20 Oct 2026 00:00:00 +0000</lastBuildDate>
+    <atom:link href="http://127.0.0.1:1313/blog/tags/efr32xg24/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Hubble Network on a Silicon Labs xG24: &#43;20 dBm radio board, Eight Weeks on a Budapest Roof, Zero Packets</title>
+      <link>http://127.0.0.1:1313/blog/posts/hubble-satellite-link-test/</link>
+      <pubDate>Mon, 05 Oct 2026 00:00:00 +0000</pubDate>
+      <guid>http://127.0.0.1:1313/blog/posts/hubble-satellite-link-test/</guid>
+      <description>We brought up Hubble&amp;#39;s direct-to-satellite BLE on an EFR32xG24, measured it at 2.482 GHz, and found out why eight weeks in Budapest gave zero packets.</description>
+    </item>
+  </channel>
+</rss>
